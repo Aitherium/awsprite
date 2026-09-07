@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1",
+  "name": "awsprite",
+  "description": "Portable client for an AitherSprite-shaped companion — status, talk, teach, list.",
+  "url": "https://aitherium.github.io/awsprite/",
+  "repository": "https://github.com/Aitherium/awsprite",
+  "kind": "runtime",
+  "status": "planned",
+  "adopt": "Hatch a companion, teach it something, and watch what it becomes.",
+  "pairs_with": [
+    "awdk",
+    "awsh",
+    "awvoice",
+    "awvision"
+  ],
+  "includes": [],
+  "metrics": {
+    "files": {
+      "value": 15,
+      "as_of": "2026-08-28T00:00:00-07:00"
+    },
+    "tests": {
+      "value": 53,
+      "as_of": "2026-08-28T00:00:00-07:00"
+    }
+  }
+}
