@@ -42,7 +42,7 @@ from awsprite.model import (
 )
 from awsprite.teach import parse_teach_entries
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "SpriteClient",

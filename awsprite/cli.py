@@ -142,6 +142,33 @@ def _cmd_list(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_export(args: argparse.Namespace) -> int:
+    from datetime import datetime, timezone
+    from pathlib import Path
+
+    from awsprite.export import build_pack, fetch_all_knowledge, write_pack
+
+    client = _client_from_args(args)
+    try:
+        state = client._request("GET", client.base_url + "/api/v1/aither-sprite/me")
+        entries = fetch_all_knowledge(client.knowledge)
+        files = build_pack(
+            state, entries, name=args.name,
+            exported_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        )
+        written = write_pack(files, Path(args.out_dir), overwrite=args.overwrite)
+    except SpriteError as exc:
+        print(f"awsprite: {exc}", file=sys.stderr)
+        return 1
+    if args.json:
+        print(json.dumps({"out_dir": str(args.out_dir), "files": [str(p) for p in written],
+                          "entries": len(entries)}, indent=2))
+    else:
+        print(f"exported {len(entries)} entries -> {args.out_dir} ({len(written)} files)")
+        print(f"next: cd {args.out_dir} && pip install awdk && adk up")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="awsprite", description=__doc__)
     ap.add_argument("--url", help="sprite-shaped service origin (or AWSPRITE_URL)")
@@ -171,6 +198,16 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_list = sub.add_parser("list", help="list known companions on the service")
     p_list.set_defaults(func=_cmd_list)
+
+    p_export = sub.add_parser(
+        "export", help="graduate the companion into an adk agent pack (state + knowledge)"
+    )
+    p_export.add_argument("out_dir", help="directory to write the pack scaffold into")
+    p_export.add_argument("--name", help="agent name (default: the sprite's name)")
+    p_export.add_argument(
+        "--overwrite", action="store_true", help="write into a non-empty directory"
+    )
+    p_export.set_defaults(func=_cmd_export)
 
     return ap
 

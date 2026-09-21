@@ -70,6 +70,32 @@ characters), never sent whole. `--kind fact|skill|link|lore` applies to
 every entry (default `fact`); `--private` requests private visibility
 (requires an entitlement on the server).
 
+## Take it home: `export`
+
+What is yours is what you taught it. `export` graduates the companion into an
+**adk agent-pack scaffold** — the sprite's state plus its whole knowledge base,
+as files you can run and keep growing on your own machine:
+
+```bash
+awsprite --url https://sprite.example export ./pip
+cd pip && pip install awdk && adk up
+```
+
+```
+pip/
+  agent.yaml            adk pack manifest -- name, slug, seed knowledge dir
+  identity.yaml         who the agent is, derived from the sprite's form and stage
+  knowledge/INDEX.md    one line per taught entry, grouped by kind
+  knowledge/<kind>/<slug>.md   one page per entry: front matter + content verbatim
+  sprite.json           the raw export (state + entries), for a round trip
+  README.md             how to grow it from here
+```
+
+`--name` renames the agent; `--overwrite` writes into a non-empty directory
+(refused otherwise — a graduation must not clobber the pack you were editing).
+Every user-supplied string lands in YAML double-quoted, so a sprite named `yes`
+stays a name. Knowledge is fetched page by page until the server runs dry.
+
 ## As a library
 
 ```python

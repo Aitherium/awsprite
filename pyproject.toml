@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "awsprite"
-version = "0.1.0"
+version = "0.2.0"
 description = "A portable client for AitherSprite-shaped companion services — status, talk, teach, and watch what it becomes."
 readme = "README.md"
 requires-python = ">=3.10"
