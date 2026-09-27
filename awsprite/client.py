@@ -187,6 +187,42 @@ def build_knowledge_request(
     return (build_url(base_url, f"/me/knowledge?limit={limit}&offset={offset}"), "GET", None)
 
 
+# -- spirit guide + training (server: lib/companion/SpriteGuide.py) ------------- #
+
+GUIDE_STATS = ("strength", "dexterity", "speed")
+
+
+def build_guide_request(base_url: str) -> Tuple[str, str, Optional[dict]]:
+    """(url, method, body) for the guide + training view (temperament, today's acts,
+    pending offer, stats, ladder, charms)."""
+    return (build_url(base_url, "/me/guide"), "GET", None)
+
+
+def build_guide_beat_request(
+    base_url: str, act: Optional[str] = None
+) -> Tuple[str, str, Optional[dict]]:
+    """(url, method, body) for the guide's ONE act of the day. `act` must be an id the
+    view lists; None lets the server choose. A weighty act comes back as an offer."""
+    return (build_url(base_url, "/me/guide/beat"), "POST", {"act": act or None})
+
+
+def build_guide_answer_request(base_url: str, accept: bool) -> Tuple[str, str, Optional[dict]]:
+    """(url, method, body) to accept or decline the guide's pending offer."""
+    return (build_url(base_url, "/me/guide/answer"), "POST", {"accept": bool(accept)})
+
+
+def build_train_request(base_url: str, stat: str) -> Tuple[str, str, Optional[dict]]:
+    """(url, method, body) to train one stat (strength | dexterity | speed)."""
+    if stat not in GUIDE_STATS:
+        raise SpriteError(f"unknown stat: {stat!r} (choose from {', '.join(GUIDE_STATS)})")
+    return (build_url(base_url, "/me/train"), "POST", {"stat": stat})
+
+
+def build_challenge_request(base_url: str) -> Tuple[str, str, Optional[dict]]:
+    """(url, method, body) to auto-battle the next foe on the ladder."""
+    return (build_url(base_url, "/me/challenge"), "POST", None)
+
+
 # --------------------------------------------------------------------------- #
 # Client
 # --------------------------------------------------------------------------- #
@@ -302,6 +338,33 @@ class SpriteClient:
         """Wake a dormant companion; returns state."""
         url, method, _body = build_revive_request(self.base_url)
         return parse_state(self._request(method, url))
+
+    # -- spirit guide + training ------------------------------------------- #
+
+    def guide(self) -> Dict[str, Any]:
+        """The guide + training view (raw server shape)."""
+        url, method, _body = build_guide_request(self.base_url)
+        return self._request(method, url)
+
+    def guide_beat(self, act: Optional[str] = None) -> Dict[str, Any]:
+        """The guide's one act for today; `result.offer` is set when it needs an answer."""
+        url, method, body = build_guide_beat_request(self.base_url, act)
+        return self._request(method, url, body)
+
+    def guide_answer(self, accept: bool) -> Dict[str, Any]:
+        """Accept or decline the pending offer."""
+        url, method, body = build_guide_answer_request(self.base_url, accept)
+        return self._request(method, url, body)
+
+    def train(self, stat: str) -> Dict[str, Any]:
+        """Train one stat; the server caps it by stage and charges energy."""
+        url, method, body = build_train_request(self.base_url, stat)
+        return self._request(method, url, body)
+
+    def challenge(self) -> Dict[str, Any]:
+        """Fight the next ladder foe; a loss may drop a charm."""
+        url, method, _body = build_challenge_request(self.base_url)
+        return self._request(method, url)
 
     def whisper(self) -> Tuple[Optional[str], Dict[str, Any]]:
         """(line, state) — the companion's proactive line, or None when it

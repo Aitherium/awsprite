@@ -169,6 +169,71 @@ def _cmd_export(args: argparse.Namespace) -> int:
     return 0
 
 
+def _print_guide(view: dict, note: str = "") -> None:
+    if note:
+        print(note)
+    ladder = view.get("ladder") or {}
+    stats = view.get("stats") or {}
+    print(f"guide: {view.get('temperament')} · today: "
+          f"{', '.join(view.get('available_acts') or []) or 'already acted'}")
+    offer = view.get("offer")
+    if offer:
+        what = f"spar ({offer.get('stat')})" if offer.get("act") == "spar" else \
+            f"venture ({offer.get('foe')})"
+        print(f"  OFFER waiting: {what} -- answer with `awsprite answer yes|no`")
+    print("  stats " + "  ".join(f"{k} {stats.get(k, 0)}/{view.get('stat_cap')}"
+                                 for k in ("strength", "dexterity", "speed")))
+    nxt = ladder.get("next_foe") or "cleared"
+    print(f"  ladder rung {ladder.get('rung')}/{ladder.get('of')}: {nxt} · "
+          f"{ladder.get('wins', 0)}W {ladder.get('losses', 0)}L")
+    if view.get("charms"):
+        worn = ", ".join(view.get("equipped") or []) or "-"
+        print(f"  charms {', '.join(view['charms'])} (worn: {worn})")
+
+
+def _guide_call(args: argparse.Namespace, fn) -> int:
+    client = _client_from_args(args)
+    try:
+        out = fn(client)
+    except SpriteError as exc:
+        print(f"awsprite: {exc}", file=sys.stderr)
+        return 1
+    if args.json:
+        print(json.dumps(out, indent=2))
+        return 0
+    result = out.get("result") or {}
+    note = result.get("line") or ""
+    outcome = result.get("outcome") or result
+    if isinstance(outcome, dict) and outcome.get("foe"):
+        note = (f"beat {outcome['foe']} in {outcome.get('rounds')} rounds" if outcome.get("won")
+                else f"lost to {outcome['foe']}" + (f", found a {outcome['charm']} charm"
+                                                    if outcome.get("charm") else ""))
+    elif isinstance(outcome, dict) and outcome.get("stat") and "gain" in outcome:
+        note = f"{outcome['stat']} +{outcome['gain']} -> {outcome['value']}/{outcome['cap']}"
+    _print_guide(out, note)
+    return 0
+
+
+def _cmd_guide(args: argparse.Namespace) -> int:
+    return _guide_call(args, lambda c: c.guide())
+
+
+def _cmd_beat(args: argparse.Namespace) -> int:
+    return _guide_call(args, lambda c: c.guide_beat(args.act))
+
+
+def _cmd_answer(args: argparse.Namespace) -> int:
+    return _guide_call(args, lambda c: c.guide_answer(args.choice == "yes"))
+
+
+def _cmd_train(args: argparse.Namespace) -> int:
+    return _guide_call(args, lambda c: c.train(args.stat))
+
+
+def _cmd_challenge(args: argparse.Namespace) -> int:
+    return _guide_call(args, lambda c: c.challenge())
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="awsprite", description=__doc__)
     ap.add_argument("--url", help="sprite-shaped service origin (or AWSPRITE_URL)")
@@ -208,6 +273,20 @@ def build_parser() -> argparse.ArgumentParser:
         "--overwrite", action="store_true", help="write into a non-empty directory"
     )
     p_export.set_defaults(func=_cmd_export)
+
+    p_guide = sub.add_parser("guide", help="the spirit guide: temperament, offer, stats, ladder")
+    p_guide.set_defaults(func=_cmd_guide)
+    p_beat = sub.add_parser("beat", help="let the guide take its one act for today")
+    p_beat.add_argument("act", nargs="?", help="an act id `guide` lists (default: its choice)")
+    p_beat.set_defaults(func=_cmd_beat)
+    p_answer = sub.add_parser("answer", help="accept or decline the guide's pending offer")
+    p_answer.add_argument("choice", choices=("yes", "no"))
+    p_answer.set_defaults(func=_cmd_answer)
+    p_train = sub.add_parser("train", help="train one stat")
+    p_train.add_argument("stat", choices=("strength", "dexterity", "speed"))
+    p_train.set_defaults(func=_cmd_train)
+    p_fight = sub.add_parser("challenge", help="fight the next foe on the ladder")
+    p_fight.set_defaults(func=_cmd_challenge)
 
     return ap
 
