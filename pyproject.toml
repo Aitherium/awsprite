@@ -30,6 +30,11 @@ Issues = "https://github.com/Aitherium/awsprite/issues"
 packages = ["awsprite"]
 license-files = ["LICENSE"]
 
+# The homestead embed script ships inside the package (awsprite.embed reads it
+# through importlib.resources), so a wheel without it would be a broken embed.
+[tool.setuptools.package-data]
+awsprite = ["web/*.js"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
