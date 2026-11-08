@@ -24,6 +24,8 @@ Hatch a companion, teach it something, and watch what it becomes.
 ## Where it lives
 
 - Repo: https://github.com/Aitherium/awsprite
+- Docs: https://aitherium.github.io/awsprite/
+- Manifest (keys + the one-line adoption story): https://aitherium.github.io/awsprite/aither-manifest.json
 
 This repository is mirrored from the AitherOS monorepo by `.github/workflows/sync-awsprite.yml`; hand edits made here are overwritten on the next sync — change the source instead.
 
